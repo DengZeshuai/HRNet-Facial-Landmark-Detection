@@ -19,7 +19,7 @@ from lib.config import config, update_config
 from lib.utils import utils
 from lib.datasets import get_dataset
 from lib.core import function
-
+from collections import OrderedDict
 
 def parse_args():
 
@@ -57,12 +57,19 @@ def main():
     model = nn.DataParallel(model, device_ids=gpus).cuda()
 
     # load model
+    # state_dict = torch.load(args.model_file)
+    # if 'state_dict' in state_dict.keys():
+    #     state_dict = state_dict['state_dict']
+    #     model.load_state_dict(state_dict)
+    # else:
+    #     model.module.load_state_dict(state_dict)
+
     state_dict = torch.load(args.model_file)
-    if 'state_dict' in state_dict.keys():
-        state_dict = state_dict['state_dict']
-        model.load_state_dict(state_dict)
-    else:
-        model.module.load_state_dict(state_dict)
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove `module.`
+        new_state_dict[name] = v
+    model.module.load_state_dict(new_state_dict)
 
     dataset_type = get_dataset(config)
 
